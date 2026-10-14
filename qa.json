@@ -1,0 +1,76 @@
+[
+	{
+		"feature": "reference-properties",
+		"caption": "The reference note stores the citekey, local PDF and offset.",
+		"note": "References/Lee.md",
+		"eval": "app.plugins.plugins['local-citation-page-jump'].pro.signOut(); 'ok'",
+		"wait": 800
+	},
+	{
+		"feature": "page-jump",
+		"caption": "The command opens the local PDF at physical page 1.",
+		"note": "Manuscript.md",
+		"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Lee2020, p. 44]\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Lee2020, p. 44]\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, false); return JSON.stringify(result); })()",
+		"wait": 1400
+	},
+	{
+		"feature": "page-offset",
+		"caption": "Printed page 44 plus offset -43 gives physical page 1.",
+		"note": "Manuscript.md",
+		"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Lee2020, p. 44]\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Lee2020, p. 44]\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, true); return JSON.stringify(result); })()",
+		"wait": 700,
+		"after": "[...app.plugins.plugins['local-citation-page-jump'].dialogs].forEach((m) => m.close()); 'ok'"
+	},
+	{
+		"feature": "page-range",
+		"caption": "Use printed page 46 from the range 46-48.",
+		"note": "Manuscript.md",
+		"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Lee2020, pp. 46-48]\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Lee2020, pp. 46-48]\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, true); return JSON.stringify(result); })()",
+		"wait": 700,
+		"after": "[...app.plugins.plugins['local-citation-page-jump'].dialogs].forEach((m) => m.close()); 'ok'"
+	},
+	{
+		"feature": "reference-error",
+		"caption": "A duplicate citekey report lists both reference paths.",
+		"note": "Manuscript.md",
+		"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Dup2020\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Dup2020\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, true); return JSON.stringify(result); })()",
+		"wait": 700,
+		"after": "[...app.plugins.plugins['local-citation-page-jump'].dialogs].forEach((m) => m.close()); 'ok'"
+	},
+	{
+		"feature": "target-preview",
+		"caption": "A citation without a locator opens physical page 1.",
+		"note": "Manuscript.md",
+		"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"@Lee2020.\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"@Lee2020.\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, true); return JSON.stringify(result); })()",
+		"wait": 700,
+		"after": "[...app.plugins.plugins['local-citation-page-jump'].dialogs].forEach((m) => m.close()); 'ok'"
+	},
+	{
+		"feature": "settings",
+		"caption": "One property map and a reference folder are free.",
+		"note": "Manuscript.md",
+		"eval": "app.plugins.plugins['local-citation-page-jump'].pro.signOut(); app.setting.open(); app.setting.openTabById('local-citation-page-jump'); 'ok'",
+		"wait": 800,
+		"after": "app.setting.close(); 'ok'"
+	},
+	{
+		"feature": "local-citation-page-jump",
+		"caption": "Preview the page calculation, then open the local PDF.",
+		"frames": [
+			{
+				"note": "Manuscript.md",
+				"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Lee2020, p. 44]\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Lee2020, p. 44]\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, true); return JSON.stringify(result); })()",
+				"hold": 1800
+			},
+			{
+				"eval": "(async () => { [...app.plugins.plugins['local-citation-page-jump'].dialogs].forEach((m) => m.close()); return 'ok'; })()",
+				"hold": 800
+			},
+			{
+				"note": "Manuscript.md",
+				"eval": "(async () => { const p = app.plugins.plugins['local-citation-page-jump']; p.pro.signOut(); p.settings.referenceFolder = 'Local Citation Page Jump/References'; const leaf = app.workspace.getMostRecentLeaf(); await leaf.setViewState({ type: 'markdown', state: { file: 'Local Citation Page Jump/Manuscript.md', mode: 'source' } }); const editor = leaf.view.editor; const lines = editor.getValue().split('\\n'); const n = lines.findIndex((s) => s.includes(\"[@Lee2020, p. 44]\")); if (n < 0) throw new Error('Missing citation'); editor.setCursor({ line: n, ch: lines[n].indexOf(\"[@Lee2020, p. 44]\") + 2 }); const deadline = Date.now() + 10000; while (!p.references().some((r) => r.citekey === 'Lee2020') || p.references().filter((r) => r.citekey === 'Dup2020').length !== 2) { if (Date.now() > deadline) throw new Error('Reference cache not ready'); await new Promise((r) => setTimeout(r, 100)); } const result = await p.runCitation(editor, false); return JSON.stringify(result); })()",
+				"hold": 1800
+			}
+		]
+	}
+]

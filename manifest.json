@@ -1,0 +1,11 @@
+{
+	"id": "local-citation-page-jump",
+	"name": "Local Citation Page Jump",
+	"version": "1.0.0",
+	"minAppVersion": "1.13.4",
+	"description": "Open a local PDF at the page number given in an existing citation.",
+	"author": "Michael Lip",
+	"authorUrl": "https://github.com/theluckystrike",
+	"fundingUrl": "https://github.com/sponsors/theluckystrike",
+	"isDesktopOnly": false
+}

@@ -1,0 +1,32 @@
+.citation-page-jump .citation-key {
+	color: var(--text-accent);
+	font-size: var(--font-ui-large);
+}
+
+.citation-page-jump .citation-physical-page {
+	font-size: 2em;
+	font-weight: var(--font-bold);
+	padding: var(--size-4-4) 0;
+}
+
+.citation-page-jump dt {
+	color: var(--text-muted);
+	margin-top: var(--size-4-3);
+	}
+
+.citation-page-jump dd {
+	margin-left: 0;
+	overflow-wrap: anywhere;
+	}
+
+.citation-page-jump .citation-muted {
+	color: var(--text-muted);
+	}
+
+.citation-page-jump .citation-error {
+	color: var(--text-error);
+	}
+
+.citation-page-jump button {
+	margin-right: var(--size-4-2);
+	}
