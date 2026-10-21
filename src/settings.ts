@@ -2,6 +2,7 @@ import { PluginSettingTab, type SettingDefinitionItem } from 'obsidian';
 import { sponsorsSettingItems } from './license/github-obsidian';
 import { PRO_UI } from './pro';
 import type LocalCitationPageJumpPlugin from './main';
+import { helloSettingItems } from './hello/settings';
 
 export interface LocalCitationPageJumpSettings {
 	referenceFolder: string;
@@ -25,6 +26,11 @@ export function normalizeSettings(saved: Partial<LocalCitationPageJumpSettings> 
 export class LocalCitationPageJumpSettingTab extends PluginSettingTab {
 	constructor(app: ConstructorParameters<typeof PluginSettingTab>[0], public plugin: LocalCitationPageJumpPlugin) { super(app, plugin); }
 	getSettingDefinitions(): SettingDefinitionItem[] {
+		// The product rows, then the "More from NoteMods" card (packages/hello).
+		return [...this.productSettingDefinitions(), ...helloSettingItems()];
+	}
+
+	productSettingDefinitions(): SettingDefinitionItem[] {
 		return [
 			{ name: 'Reference folder', desc: 'One vault folder, with its subfolders. Leave empty to use the vault.', control: { type: 'text', key: 'referenceFolder', defaultValue: '' } },
 			{ name: 'Citekey property', desc: 'Text property with one key. Case must match the citation.', control: { type: 'text', key: 'citekeyProperty', defaultValue: 'citekey' } },

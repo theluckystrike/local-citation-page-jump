@@ -64,6 +64,8 @@ Open the manuscript in Source mode or Live Preview. Put the cursor on the key or
 
 ## Settings
 
+After a minor or major update, this plugin opens one What's new tab in the background. The tab and settings card suggest other NoteMods plugins and Zovo Chat and link to notemods.com for feedback ([privacy](https://notemods.com/privacy/)). The tab sends no data. Turn the tab off in Settings.
+
 | Setting | Use |
 | --- | --- |
 | Reference folder | One vault folder, including subfolders. Empty means the vault. |
