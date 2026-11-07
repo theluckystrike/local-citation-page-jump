@@ -2,7 +2,7 @@
 // device-local state, the "Get Pro" settings rows and a Pro guard.
 // Products import it as the ./github-obsidian entry of this package.
 import { Notice, requestUrl, type App, type Component, type RequestUrlResponsePromise, type Setting, type SettingDefinitionItem } from 'obsidian';
-import { ACCESS_TOKEN_URL, DEVICE_CODE_URL, GRAPHQL_URL, sponsorUrl, type DeviceCode, type SponsorsConfig } from './github';
+import { ACCESS_TOKEN_URL, COPY_TAG, DEVICE_CODE_URL, GRAPHQL_URL, sponsorUrl, type DeviceCode, type SponsorsConfig } from './github';
 import { SponsorsManager, type SponsorsState, type SponsorsStateStore, type TokenStore } from './sponsors';
 import type { HttpClient, HttpRequest, HttpResponse } from './types';
 
@@ -77,7 +77,8 @@ export function localSponsorsStore(app: App, pluginId: string): SponsorsStateSto
  * owner is the plugin: its unload disposes the manager, so a sign-in poll or a check never outlives the plugin.
  */
 export function createGitHubSponsors(app: App, pluginId: string, config: SponsorsConfig, owner: Pick<Component, 'register'>): SponsorsManager {
-	const pro = new SponsorsManager({ config, http: githubRequestClient, tokens: secretTokenStore(app, pluginId), store: localSponsorsStore(app, pluginId) });
+	// The plugin id goes into the Sponsor URL as metadata_source, so a payment from this plugin can be attributed.
+	const pro = new SponsorsManager({ config: { ...config, source: config.source ?? pluginId }, http: githubRequestClient, tokens: secretTokenStore(app, pluginId), store: localSponsorsStore(app, pluginId) });
 	owner.register(() => pro.dispose());
 	return pro;
 }
@@ -117,15 +118,79 @@ async function copyText(text: string): Promise<boolean> {
 	}
 }
 
-/** Fills the "Get Pro" row: what Pro adds, the price and the Sponsor button. */
+/**
+ * What a Pro gate may tell this user. Owner rule: never pitch a paying user.
+ *  - none: Pro is on.
+ *  - recheck: signed in, and GitHub answered Pro before (the grace time is over), or the first check has not ended
+ *    yet (in flight, or no attempt yet). The text asks for Refresh and has no Sponsor link.
+ *  - pitch: signed out, GitHub said no, or a check failed before any answer came. "unchecked" is not evidence of
+ *    payment, so after a failed check the pitch shows, with a Refresh line for a user who already sponsors.
+ */
+export type ProNoticeKind = 'none' | 'recheck' | 'pitch';
+
+export function proNoticeKind(pro: SponsorsManager): ProNoticeKind {
+	if (pro.isPro()) return 'none';
+	const status = pro.getState().status;
+	if (!pro.hasToken()) return 'pitch';
+	if (status === 'pro') return 'recheck';
+	if (status === 'unchecked' && (pro.isChecking() || pro.getState().lastAttemptAt === 0)) return 'recheck';
+	return 'pitch';
+}
+
+/**
+ * The catalog sentence. One payment to the seller turns on Pro in each NoteMods plugin, because the Pro check reads the
+ * total paid to the seller and has no plugin id (github.ts applyTotalPaid). Only a free user sees it: the pitch of the
+ * Pro gate notice, the settings "Get pro" row and the price row of the "What Pro adds" window. It names no plugin count,
+ * because the count changes. Sponsor URLs next to it carry COPY_TAG (github.ts) in metadata_source.
+ */
+export const CATALOG_TEXT = 'One payment turns on Pro in every NoteMods plugin.';
+export const PRO_PITCH_TEXT = `${CATALOG_TEXT} Sponsor on GitHub, then sign in from the plugin settings.`;
+export const PRO_RECHECK_TEXT = 'To check your sponsorship again, select Refresh in the plugin settings.';
+/** Added to the pitch for a signed-in user whose check failed: GitHub gave no answer, so the user may sponsor. */
+export const PRO_FAILED_CHECK_TEXT = 'If you already sponsor, select Refresh in the plugin settings.';
+
+/** The text for a Pro gate: the lead (what the feature does, or that it needs Pro), then the next step for this user. */
+export function proNeededText(pro: SponsorsManager | null, lead: string): string {
+	const kind = pro ? proNoticeKind(pro) : 'pitch';
+	if (kind === 'none') return lead;
+	if (kind === 'recheck') return `${lead} ${PRO_RECHECK_TEXT}`;
+	const failed = !!pro && pro.hasToken() && pro.getState().status === 'unchecked';
+	return failed ? `${lead} ${PRO_PITCH_TEXT} ${PRO_FAILED_CHECK_TEXT}` : `${lead} ${PRO_PITCH_TEXT}`;
+}
+
+/**
+ * Shows the Pro gate notice. For a free user it has a "Sponsor on GitHub" button that opens the Sponsors page with
+ * metadata_source. For a signed-in user who may sponsor it asks for Refresh and has no link. Returns the notice, or
+ * null when Pro is on.
+ */
+export function showProNotice(pro: SponsorsManager | null, lead: string): Notice | null {
+	if (pro && proNoticeKind(pro) === 'none') return null;
+	const text = proNeededText(pro, lead);
+	if (!pro || proNoticeKind(pro) !== 'pitch') return new Notice(text);
+	const url = sponsorUrl(pro.config, COPY_TAG);
+	const fragment = createFragment((f) => {
+		f.createSpan({ text });
+		// The button sits on its own line under the text.
+		const button = f.createDiv().createEl('button', { text: 'Sponsor on GitHub', cls: 'mod-cta pf-pro-notice-sponsor' });
+		button.addEventListener('click', () => openUrl(url));
+	});
+	return new Notice(fragment, 10000);
+}
+
+/** Fills the "Get Pro" row: what Pro adds, the price and the Sponsor button. A user who may sponsor gets no pitch. */
 export function fillGetProSetting(setting: Setting, pro: SponsorsManager, ui: SponsorsUiOptions): void {
+	if (proNoticeKind(pro) !== 'pitch') {
+		setting.setName('Pro');
+		setting.setDesc(ui.proSummary);
+		return;
+	}
 	setting.setName('Get pro');
-	setting.setDesc(`${ui.proSummary} ${ui.priceText} Sponsor on GitHub, then sign in below with the same GitHub account.`);
+	setting.setDesc(`${ui.proSummary} ${ui.priceText} ${CATALOG_TEXT} Sponsor on GitHub, then sign in below with the same GitHub account.`);
 	setting.addButton((b) =>
 		b
 			.setButtonText('Sponsor on GitHub')
 			.setCta()
-			.onClick(() => openUrl(sponsorUrl(pro.config))),
+			.onClick(() => openUrl(sponsorUrl(pro.config, COPY_TAG))),
 	);
 }
 
@@ -234,6 +299,48 @@ export function guardSponsorsPro<A extends unknown[]>(pro: SponsorsManager, acti
 			void action(...args);
 			return;
 		}
-		new Notice('This is a pro feature. Sponsor on GitHub, then sign in from the plugin settings.');
+		showProNotice(pro, 'This is a pro feature.');
 	};
 }
+
+/** The elements that can hold the keyboard focus in a settings row. The order is the DOM order. */
+const FOCUS_CONTROLS = 'select, input, textarea, button, a[href], [tabindex]';
+
+/** True for a field where the user types text. Each key in such a field is a new change. */
+function isTextEntry(el: HTMLElement): boolean {
+	if (el.tagName === 'TEXTAREA' || el.isContentEditable) return true;
+	if (el.tagName !== 'INPUT') return false;
+	return ['text', 'search', 'email', 'url', 'tel', 'password', 'number', ''].includes((el as HTMLInputElement).type);
+}
+
+/**
+ * Draws a declarative setting tab again after a refused change (for example a Pro choice of a free user), and keeps the
+ * keyboard focus on the same control. Obsidian does not draw a control row again while the focus is in it. So this
+ * moves the focus out, calls tab.update(), then puts the focus on the control at the same place in the same row.
+ * For a text field the focus stays out (each key would show the notice again), the same as before.
+ */
+export function redrawKeepFocus(tab: { containerEl: HTMLElement; update(): void }): void {
+	const root = tab.containerEl;
+	const active = root.ownerDocument.activeElement as HTMLElement | null;
+	if (!active || active === root || !root.contains(active)) {
+		tab.update();
+		return;
+	}
+	const rows = (): HTMLElement[] => Array.from(root.querySelectorAll<HTMLElement>('.setting-item'));
+	const row = active.closest<HTMLElement>('.setting-item');
+	const rowIndex = row ? rows().indexOf(row) : -1;
+	const name = row?.querySelector('.setting-item-name')?.textContent ?? null;
+	const controlIndex = row ? Array.from(row.querySelectorAll<HTMLElement>(FOCUS_CONTROLS)).indexOf(active) : -1;
+	const keep = rowIndex >= 0 && controlIndex >= 0 && !isTextEntry(active);
+	active.blur();
+	tab.update();
+	if (!keep) return;
+	const now = rows();
+	const same = (r: HTMLElement | undefined): boolean => !!r && (r.querySelector('.setting-item-name')?.textContent ?? null) === name;
+	const target = same(now[rowIndex]) ? now[rowIndex] : now.find(same);
+	const control = target?.querySelectorAll<HTMLElement>(FOCUS_CONTROLS)[controlIndex];
+	control?.focus({ preventScroll: true });
+}
+
+// The "What Pro adds" window (what-pro.ts) is part of this entry.
+export * from './what-pro';

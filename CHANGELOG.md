@@ -1,5 +1,11 @@
 # local-citation-page-jump
 
+## 1.1.1
+
+### Patch Changes
+
+- 1499b68: The Pro notice of Local Citation Page Jump now says that one payment turns on Pro in every NoteMods plugin. The package file now names the public repository of the plugin.
+
 ## 1.1.0
 
 ### Minor Changes
