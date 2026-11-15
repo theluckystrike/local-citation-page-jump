@@ -1,7 +1,7 @@
 {
 	"id": "local-citation-page-jump",
 	"name": "Local Citation Page Jump",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"changes": [
 		"The Pro notice of Local Citation Page Jump now says that one payment turns on Pro in every NoteMods plugin.",
 		"The package file now names the public repository of the plugin."

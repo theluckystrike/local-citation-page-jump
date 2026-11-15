@@ -1,5 +1,11 @@
 # local-citation-page-jump
 
+## 1.1.2
+
+### Patch Changes
+
+- The Sponsor button now opens the NoteMods one-time tier.
+
 ## 1.1.1
 
 ### Patch Changes
